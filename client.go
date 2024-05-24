@@ -1,28 +1,35 @@
-// client.go
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"net"
-	//"os"
+	"os"
 )
 
 func main() {
-	// Se connecte au serveur sur le port 8080
-	conn, err := net.Dial("tcp", "localhost:8080")
+	serverAddr := "localhost:8080"
+	conn, err := net.Dial("udp", serverAddr)
 	if err != nil {
 		fmt.Println("Erreur lors de la connexion au serveur:", err)
-		return
+		os.Exit(1)
 	}
 	defer conn.Close()
-	fmt.Println("Connecté au serveur sur le port 8080")
 
-	// Lit la réponse du serveur
-	message, err := bufio.NewReader(conn).ReadString('\n')
+	// Envoie un message au serveur
+	message := []byte("Bonjour serveur\n")
+	_, err = conn.Write(message)
+	if err != nil {
+		fmt.Println("Erreur lors de l'envoi du message:", err)
+		return
+	}
+	fmt.Println("Message envoyé au serveur:", string(message))
+
+	// Lis la réponse du serveur
+	buffer := make([]byte, 1024)
+	n, err := conn.Read(buffer)
 	if err != nil {
 		fmt.Println("Erreur lors de la lecture de la réponse:", err)
 		return
 	}
-	fmt.Print("Message du serveur: " + message)
+	fmt.Println("Réponse reçue du serveur:", string(buffer[:n]))
 }

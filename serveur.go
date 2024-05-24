@@ -1,4 +1,3 @@
-// server.go
 package main
 
 import (
@@ -8,34 +7,36 @@ import (
 
 func main() {
 	// Écoute sur le port 8080
-	ln, err := net.Listen("tcp", ":8080")
+	addr := net.UDPAddr{
+		Port: 8080,
+		IP:   net.ParseIP("0.0.0.0"),
+	}
+	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
 		fmt.Println("Erreur lors de l'écoute:", err)
 		return
 	}
-	defer ln.Close()
-	fmt.Println("Serveur en écoute sur le port 8080")
+	defer conn.Close()
+	fmt.Println("Serveur UDP en écoute sur le port 8080")
+
+	buffer := make([]byte, 1024)
 
 	for {
-		// Accepte une connexion
-		conn, err := ln.Accept()
+		// Lis le message du client
+		n, clientAddr, err := conn.ReadFromUDP(buffer)
 		if err != nil {
-			fmt.Println("Erreur lors de l'acceptation de la connexion:", err)
+			fmt.Println("Erreur lors de la lecture du message:", err)
 			continue
 		}
-		// Gère la connexion dans une goroutine
-		go handleConnection(conn)
-	}
-}
+		fmt.Printf("Message reçu du client %s: %s\n", clientAddr, string(buffer[:n]))
 
-func handleConnection(conn net.Conn) {
-	defer conn.Close()
-	// Envoie le message "Hello" au client
-	message := "Hello\n"
-	_, err := conn.Write([]byte(message))
-	if err != nil {
-		fmt.Println("Erreur lors de l'envoi du message:", err)
-		return
+		// Envoie le message "Hello" au client
+		message := []byte("Hello\n")
+		_, err = conn.WriteToUDP(message, clientAddr)
+		if err != nil {
+			fmt.Println("Erreur lors de l'envoi du message:", err)
+			continue
+		}
+		fmt.Printf("Message envoyé au client %s: %s\n", clientAddr, message)
 	}
-	fmt.Println("Message envoyé au client:", message)
 }
